@@ -1,6 +1,6 @@
 """
 app.py — Streamlit UI for Self-Corrective Agentic RAG.
-Level 1 + Level 2 + Level 3 modifications.
+Level 1 + Level 2 + Level 3 + Mobile Responsive.
 
 Run with:
     streamlit run app.py
@@ -24,8 +24,134 @@ logging.basicConfig(level=logging.INFO)
 st.set_page_config(
     page_title="Autonomous Document Intelligence",
     page_icon="🧠",
-    layout="wide",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
+
+# ─────────────────────────────────────────────
+# Custom CSS — responsive for all screen sizes
+# ─────────────────────────────────────────────
+st.markdown("""
+<style>
+    /* ── Global font & spacing ── */
+    html, body, [class*="css"] {
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* ── Main container max width ── */
+    .block-container {
+        max-width: 860px;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-top: 1.5rem;
+    }
+
+    /* ── Title ── */
+    h1 {
+        font-size: clamp(1.4rem, 4vw, 2.2rem) !important;
+        line-height: 1.2 !important;
+    }
+
+    /* ── Subheaders ── */
+    h2, h3 {
+        font-size: clamp(1rem, 3vw, 1.4rem) !important;
+    }
+
+    /* ── Buttons — full width on mobile ── */
+    .stButton > button {
+        width: 100%;
+        border-radius: 8px;
+        font-size: clamp(0.8rem, 2.5vw, 1rem);
+        padding: 0.5rem 1rem;
+    }
+
+    /* ── Text area ── */
+    .stTextArea textarea {
+        font-size: clamp(0.85rem, 2vw, 1rem) !important;
+        border-radius: 8px;
+    }
+
+    /* ── Text input ── */
+    .stTextInput input {
+        font-size: clamp(0.85rem, 2vw, 1rem) !important;
+        border-radius: 8px;
+    }
+
+    /* ── Metrics — responsive grid ── */
+    [data-testid="metric-container"] {
+        background: #1e1e2e;
+        border-radius: 10px;
+        padding: 0.8rem;
+        text-align: center;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-size: clamp(1.2rem, 4vw, 2rem) !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        font-size: clamp(0.7rem, 2vw, 0.9rem) !important;
+    }
+
+    /* ── Expander ── */
+    .streamlit-expanderHeader {
+        font-size: clamp(0.85rem, 2.5vw, 1rem) !important;
+        border-radius: 8px;
+    }
+
+    /* ── Chat messages ── */
+    [data-testid="stChatMessage"] {
+        font-size: clamp(0.85rem, 2vw, 1rem) !important;
+        border-radius: 10px;
+        padding: 0.5rem;
+    }
+
+    /* ── Progress bar ── */
+    .stProgress > div > div {
+        border-radius: 10px;
+        height: 10px;
+    }
+
+    /* ── Download button ── */
+    .stDownloadButton > button {
+        width: 100%;
+        border-radius: 8px;
+        font-size: clamp(0.8rem, 2vw, 0.95rem);
+    }
+
+    /* ── Sidebar ── */
+    [data-testid="stSidebar"] {
+        min-width: 280px !important;
+        max-width: 320px !important;
+    }
+
+    [data-testid="stSidebar"] .stButton > button {
+        font-size: 0.85rem;
+    }
+
+    /* ── Caption text ── */
+    .stCaption {
+        font-size: clamp(0.7rem, 1.8vw, 0.85rem) !important;
+    }
+
+    /* ── Status box ── */
+    [data-testid="stStatus"] {
+        border-radius: 10px;
+        font-size: clamp(0.8rem, 2vw, 0.95rem) !important;
+    }
+
+    /* ── Mobile: stack columns vertically ── */
+    @media (max-width: 640px) {
+        .block-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        [data-testid="column"] {
+            min-width: 100% !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
 # Session state
@@ -77,7 +203,7 @@ with st.sidebar:
                 tmp.write(uploaded_file.read())
                 tmp_path = tmp.name
             try:
-                preview = get_document_preview(tmp_path)
+                preview  = get_document_preview(tmp_path)
                 n_chunks = ingest_pdf(tmp_path)
                 st.success(f"✅ {uploaded_file.name} → {n_chunks} chunks")
                 if uploaded_file.name not in st.session_state.ingested_files:
@@ -113,7 +239,6 @@ with st.sidebar:
 
     # ── Knowledge Base Manager ────────────────
     st.header("📚 Knowledge Base")
-
     if st.session_state.ingested_files:
         st.caption(f"{len(st.session_state.ingested_files)} source(s) ingested")
         for fname in list(st.session_state.ingested_files):
@@ -130,11 +255,12 @@ with st.sidebar:
                 for fname, preview in st.session_state.doc_summaries.items():
                     st.markdown(f"**{fname}**")
                     st.text_area(
-                        label="",
+                        label=fname,
                         value=preview[:500] + "..." if len(preview) > 500 else preview,
                         height=100,
                         key=f"preview_{fname}",
                         disabled=True,
+                        label_visibility="collapsed",
                     )
                     st.divider()
     else:
@@ -155,14 +281,14 @@ with st.sidebar:
         selected_query = st.selectbox(
             "Re-run a previous query:",
             options=[""] + list(reversed(st.session_state.query_history[-10:])),
-            format_func=lambda x: "Select a query..." if x == "" else (x[:55] + "..." if len(x) > 55 else x),
+            format_func=lambda x: "Select a query..." if x == "" else (x[:50] + "..." if len(x) > 50 else x),
         )
     else:
         st.caption("No queries yet.")
         selected_query = ""
 
 # ─────────────────────────────────────────────
-# Conversation History — collapsed expander
+# Conversation History — collapsed
 # ─────────────────────────────────────────────
 if st.session_state.chat_history:
     with st.expander(f"💬 Conversation History ({len(st.session_state.chat_history)} messages)", expanded=False):
@@ -192,11 +318,11 @@ query = st.text_area(
     height=100,
 )
 
-col1, col2, col3 = st.columns([1, 1, 4])
+col1, col2 = st.columns(2)
 with col1:
-    run_btn = st.button("🚀 Run Query", type="primary", disabled=not query.strip())
+    run_btn = st.button("🚀 Run Query", type="primary", disabled=not query.strip(), use_container_width=True)
 with col2:
-    if st.button("🗑️ Clear Chat", type="secondary"):
+    if st.button("🗑️ Clear Chat", type="secondary", use_container_width=True):
         st.session_state.chat_history = []
         st.rerun()
 
@@ -235,7 +361,6 @@ if run_btn and query.strip():
         elapsed    = round(time.time() - start_time, 1)
         word_count = len(result["answer"].split())
 
-        # Save to chat history
         st.session_state.chat_history.append({
             "question":       query.strip(),
             "answer":         result["answer"],
@@ -251,7 +376,7 @@ if run_btn and query.strip():
         st.markdown(result["answer"])
         st.caption(f"⏱ Generated in {elapsed}s · 📝 {word_count} words")
 
-        # ── Export button ─────────────────────────
+        # ── Export ────────────────────────────────
         export_text = (
             f"Question: {query.strip()}\n\n"
             f"Answer:\n{result['answer']}\n\n"
@@ -265,9 +390,10 @@ if run_btn and query.strip():
             data=export_text,
             file_name="answer_export.txt",
             mime="text/plain",
+            use_container_width=True,
         )
 
-        # ── Confidence Indicator ──────────────────
+        # ── Confidence ────────────────────────────
         if result.get("context_docs"):
             avg_distance = sum(d["distance"] for d in result["context_docs"]) / len(result["context_docs"])
             confidence   = max(0.0, min(1.0, round(1 - avg_distance, 2)))
@@ -284,10 +410,10 @@ if run_btn and query.strip():
 
         # ── Pipeline Diagnostics ──────────────────
         with st.expander("🔍 Pipeline Diagnostics", expanded=True):
-            cols = st.columns(3)
-            cols[0].metric("Grader Verdict", result["grader_verdict"].upper())
-            cols[1].metric("Query Rewrites", result["rewrite_count"])
-            cols[2].metric("Sources Found",  len(result["citations"]))
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Grader Verdict", result["grader_verdict"].upper())
+            c2.metric("Query Rewrites", result["rewrite_count"])
+            c3.metric("Sources Found",  len(result["citations"]))
 
             if result["citations"]:
                 st.markdown("**Citations:**")
@@ -302,11 +428,12 @@ if run_btn and query.strip():
                     clean_name = os.path.basename(doc["source"]).split("__")[-1]
                     st.markdown(f"**Chunk {i}** — `{clean_name}` — score: `{doc['distance']}`")
                     st.text_area(
-                        label="",
+                        label=f"chunk_{i}",
                         value=doc["content"],
                         height=120,
                         key=f"chunk_{i}",
                         disabled=True,
+                        label_visibility="collapsed",
                     )
                     st.divider()
 
