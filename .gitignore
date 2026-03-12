@@ -1,0 +1,11 @@
+code .gitignore
+```
+
+Paste this inside and save:
+```
+rag-env/
+chroma_store/
+__pycache__/
+*.pyc
+.env
+*.db
